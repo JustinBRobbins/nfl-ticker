@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>NFL Ticker</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: black;
+      color: lime;
+      font-family: Arial, sans-serif;
+      font-size: 24px;
+      overflow: hidden;
+    }
+    #ticker {
+      display: flex;
+      flex-direction: column;
+      animation: scroll-up 20s linear infinite;
+    }
+    .score-row {
+      display: flex;
+      align-items: center;
+      padding: 5px;
+      border-bottom: 1px solid #444;
+      transition: background-color 0.5s;
+    }
+    .flash {
+      background-color: yellow !important;
+      color: black !important;
+    }
+    .team-logo {
+      width: 32px;
+      height: 32px;
+      margin-right: 10px;
+    }
+    .score-text {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div id="ticker"></div>
+
+  <script>
+    const sheetName = "Ticker";
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/1AbCdeFGHIjkLmNoPQrstUVwxYZ1234567890/gviz/tq?tqx=out:json&sheet=" + sheetName;
+
+    const teamLogos = {
+      "KC": "https://a.espncdn.com/i/teamlogos/nfl/500/kc.png",
+      "BUF": "https://a.espncdn.com/i/teamlogos/nfl/500/buf.png",
+      "DAL": "https://a.espncdn.com/i/teamlogos/nfl/500/dal.png",
+      "PHI": "https://a.espncdn.com/i/teamlogos/nfl/500/phi.png",
+      // Add more abbreviations and logo URLs as needed
+    };
+
+    let lastScores = [];
+
+    function parseGoogleSheetJSON(text) {
+      const jsonPrefix = "/*O_o*/\ngoogle.visualization.Query.setResponse(";
+      const jsonSuffix = ");";
+
+      if (!text.startsWith(jsonPrefix) || !text.endsWith(jsonSuffix)) {
+        throw new Error("Unexpected Google Sheets JSON format");
+      }
+
+      const jsonString = text.substring(jsonPrefix.length, text.length - jsonSuffix.length);
+      return JSON.parse(jsonString);
+    }
+
+    function loadScores() {
+      fetch(sheetUrl)
+        .then(res => res.text())
+        .then(text => {
+          let json;
+          try {
+            json = parseGoogleSheetJSON(text);
+          } catch (e) {
+            throw new Error("Failed to parse sheet data: " + e.message);
+          }
+
+          const rows = json.table.rows;
+          const ticker = document.getElementById("ticker");
+          ticker.innerHTML = "";
+
+          if (rows.length <= 1) {
+            const msg = document.createElement("div");
+            msg.className = "score-text";
+            msg.textContent = "No NFL games currently available.";
+            ticker.appendChild(msg);
+            return;
+          }
+
+          const newScores = [];
+
+          rows.slice(1).forEach((row, index) => {
+            const text = row.c[0]?.v;
+            if (!text) return;
+
+            newScores.push(text);
+            const hasChanged = lastScores[index] !== text;
+
+            const div = document.createElement("div");
+            div.className = "score-row";
+
+            if (hasChanged && lastScores.length > 0) {
+              div.classList.add("flash");
+              setTimeout(() => div.classList.remove("flash"), 1000);
+            }
+
+            const abbrevMatches = text.match(/\b[A-Z]{2,3}\b/g);
+            const logoAbbrev = abbrevMatches && abbrevMatches[0];
+
+            const logo = document.createElement("img");
+            logo.className = "team-logo";
+            logo.src = teamLogos[logoAbbrev] || "https://a.espncdn.com/i/teamlogos/nfl/500/nfl.png";
+
+            const span = document.createElement("span");
+            span.className = "score-text";
+            span.textContent = text;
+
+            div.appendChild(logo);
+            div.appendChild(span);
+            ticker.appendChild(div);
+          });
+
+          lastScores = newScores;
+        })
+        .catch(err => {
+          const errorMsg = document.createElement("div");
+          errorMsg.className = "score-text";
+          errorMsg.textContent = "Error loading scores. Please check the sheet ID or format.";
+          document.getElementById("ticker").appendChild(errorMsg);
+          console.error(err);
+        });
+    }
+
+    loadScores();
+    setInterval(loadScores, 300000);
+  </script>
+</body>
+</html>
