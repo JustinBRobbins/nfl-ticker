@@ -79,6 +79,10 @@
       "Washington Commanders": "https://a.espncdn.com/i/teamlogos/nfl/500/wsh.png"
     };
 
+    function normalizeTeamName(name) {
+      return name?.trim().toLowerCase();
+    }
+
     let lastScores = [];
 
     function parseGoogleSheetJSON(text) {
@@ -133,13 +137,19 @@
               setTimeout(() => div.classList.remove("flash"), 1000);
             }
 
+            const normalizedAway = normalizeTeamName(away);
+            const normalizedHome = normalizeTeamName(home);
+            const logoKeys = Object.keys(teamLogos);
+            const matchedAway = logoKeys.find(key => key.toLowerCase() === normalizedAway);
+            const matchedHome = logoKeys.find(key => key.toLowerCase() === normalizedHome);
+
             const awayLogo = document.createElement("img");
             awayLogo.className = "team-logo";
-            awayLogo.src = teamLogos[away] || "https://a.espncdn.com/i/teamlogos/nfl/500/nfl.png";
+            awayLogo.src = teamLogos[matchedAway] || "https://a.espncdn.com/i/teamlogos/nfl/500/nfl.png";
 
             const homeLogo = document.createElement("img");
             homeLogo.className = "team-logo";
-            homeLogo.src = teamLogos[home] || "https://a.espncdn.com/i/teamlogos/nfl/500/nfl.png";
+            homeLogo.src = teamLogos[matchedHome] || "https://a.espncdn.com/i/teamlogos/nfl/500/nfl.png";
 
             const span = document.createElement("span");
             span.className = "score-text";
