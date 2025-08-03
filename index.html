@@ -42,7 +42,7 @@
 
   <script>
     const sheetName = "Ticker";
-    const sheetUrl = "https://docs.google.com/spreadsheets/d/1AbCdeFGHIjkLmNoPQrstUVwxYZ1234567890/gviz/tq?tqx=out:json&sheet=" + sheetName;
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/1YNKX5NYN_OxAgnfPRnQqx57WG__LafLVXO9JCS3L5Xc/gviz/tq?tqx=out:json&sheet=" + sheetName;
 
     const teamLogos = {
       "KC": "https://a.espncdn.com/i/teamlogos/nfl/500/kc.png",
@@ -81,7 +81,7 @@
           const ticker = document.getElementById("ticker");
           ticker.innerHTML = "";
 
-          if (rows.length <= 1) {
+          if (rows.length === 0) {
             const msg = document.createElement("div");
             msg.className = "score-text";
             msg.textContent = "No NFL games currently available.";
@@ -91,12 +91,14 @@
 
           const newScores = [];
 
-          rows.slice(1).forEach((row, index) => {
-            const text = row.c[0]?.v;
-            if (!text) return;
+          rows.forEach((row, index) => {
+            const home = row.c[0]?.v;
+            const homeScore = row.c[1]?.f || row.c[1]?.v;
+            const away = row.c[2]?.v;
+            const awayScore = row.c[3]?.f || row.c[3]?.v;
 
-            newScores.push(text);
-            const hasChanged = lastScores[index] !== text;
+            const summary = `${away} ${awayScore} @ ${home} ${homeScore}`;
+            const hasChanged = lastScores[index] !== summary;
 
             const div = document.createElement("div");
             div.className = "score-row";
@@ -106,7 +108,7 @@
               setTimeout(() => div.classList.remove("flash"), 1000);
             }
 
-            const abbrevMatches = text.match(/\b[A-Z]{2,3}\b/g);
+            const abbrevMatches = summary.match(/\b[A-Z]{2,3}\b/g);
             const logoAbbrev = abbrevMatches && abbrevMatches[0];
 
             const logo = document.createElement("img");
@@ -115,11 +117,13 @@
 
             const span = document.createElement("span");
             span.className = "score-text";
-            span.textContent = text;
+            span.textContent = summary;
 
             div.appendChild(logo);
             div.appendChild(span);
             ticker.appendChild(div);
+
+            newScores.push(summary);
           });
 
           lastScores = newScores;
